@@ -206,22 +206,26 @@ export default function RedditFeed() {
                       </span>
                     </div>
 
-                    {/* Title */}
-                    <h2 className="text-white text-sm sm:text-base md:text-lg lg:text-xl font-bold tracking-tight mb-1.5 sm:mb-2 cursor-pointer transition-colors duration-300 line-clamp-2 sm:line-clamp-3 md:line-clamp-none break-words">
-                      {post.title}
-                    </h2>
+                    <div className="flex flex-col md:flex-row gap-2 sm:gap-3 md:gap-4">
+                      {/* Left side - Text content (60% on desktop) */}
+                      <div className="flex-1 md:w-[60%] min-w-0">
+                        {/* Title */}
+                        <h2 className="text-white text-sm sm:text-base md:text-lg lg:text-xl font-bold tracking-tight mb-1.5 sm:mb-2 cursor-pointer transition-colors duration-300 line-clamp-2 sm:line-clamp-3 md:line-clamp-none break-words">
+                          {post.title}
+                        </h2>
 
-                    {/* Content */}
-                    <p className="text-gray-400 text-[11px] sm:text-xs md:text-sm mb-1.5 sm:mb-2 md:mb-3 break-words">
-                      {post.content && post.content.length > 150
-                        ? `${post.content.substring(0, 150)}...`
-                        : post.content}
-                    </p>
+                        {/* Content */}
+                        <p className="text-gray-400 text-[11px] sm:text-xs md:text-sm mb-1.5 sm:mb-2 md:mb-3 break-words">
+                          {post.content && post.content.length > 150
+                            ? `${post.content.substring(0, 250)}...`
+                            : post.content}
+                        </p>
+                      </div>
 
-                    {post.media && post.media.length > 0 && (
-                      <>
-                        <div
-                          className="mb-2 sm:mb-3 md:mb-4 rounded-md sm:rounded-lg overflow-hidden cursor-pointer"
+                      {/* Right side - Image (40% on desktop, fixed height) */}
+                      {post.media && post.media.length > 0 && (
+                        <div 
+                          className="w-full h-52 md:w-[45%] md:h-36 lg:h-40 xl:h-44 flex-shrink-0 rounded-md sm:rounded-lg overflow-hidden cursor-pointer"
                           onClick={() =>
                             setShowCommentInput(
                               showCommentInput === `img-${post.postId}`
@@ -233,29 +237,29 @@ export default function RedditFeed() {
                           <img
                             src={post.media[0]}
                             alt={post.title}
-                            className="w-full h-auto max-h-[200px] sm:max-h-[250px] md:max-h-[300px] object-cover hover:opacity-90 transition-opacity"
+                            className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                           />
                         </div>
+                      )}
+                    </div>
 
-                        {/* Expanded Image Modal */}
-                        {showCommentInput === `img-${post.postId}` && (
-                          <div
-                            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-                            onClick={() => setShowCommentInput(null)}
-                          >
-                            <img
-                              src={post.media[0]}
-                              alt={post.title}
-                              className="max-w-full max-h-full object-contain"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                        )}
-                      </>
+                    {/* Expanded Image Modal */}
+                    {post.media && post.media.length > 0 && showCommentInput === `img-${post.postId}` && (
+                      <div
+                        className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                        onClick={() => setShowCommentInput(null)}
+                      >
+                        <img
+                          src={post.media[0]}
+                          alt={post.title}
+                          className="max-w-full max-h-full object-contain"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
                     )}
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 flex-wrap">
+                    <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 flex-wrap mt-2 sm:mt-3">
                       <button
                         onClick={() =>
                           setShowCommentInput(
@@ -284,10 +288,6 @@ export default function RedditFeed() {
                         <span className="text-[10px] sm:text-xs md:text-sm font-semibold hidden md:inline">
                           Save
                         </span>
-                      </button>
-
-                      <button className="ml-auto p-1 sm:p-1.5 md:p-2 text-gray-400 hover:bg-[#272729] rounded sm:rounded-md md:rounded-lg active:scale-95">
-                        <MoreHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                       </button>
                     </div>
 
