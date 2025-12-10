@@ -167,10 +167,5 @@ export const useVotePost = () => {
         };
       });
     },
-    onSettled: (data, error, variables) => {
-      // Invalidate to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ['posts', variables.postId] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-    },
   });
 };
