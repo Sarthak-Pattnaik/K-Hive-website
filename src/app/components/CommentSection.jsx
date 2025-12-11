@@ -32,11 +32,6 @@ function InlineReply({ parentId = null, onCancel, onSubmit, postId }) {
   const [text, setText] = useState("");
   const { mutate: createComment, isPending } = useCreateComment();
 
-  const handleCancel = () => {
-    setText("");
-    onCancel?.();
-  };
-
   const handleSubmit = async () => {
     if (!text.trim()) return;
     
@@ -152,7 +147,7 @@ function EditCommentForm({ comment, onCancel, onSuccess }) {
 function RepliesList({ commentId, postId, router, user }) {
   const [page, setPage] = useState(1);
   const [editingReplyId, setEditingReplyId] = useState(null);
-  const { data: repliesData, isLoading, refetch } = useReplies(commentId, { page, limit: 10 });
+  const { data: repliesData, isLoading } = useReplies(commentId, { page, limit: 10 });
   const { mutate: deleteComment } = useDeleteComment();
 
   const replies = repliesData?.data || [];
@@ -162,9 +157,6 @@ function RepliesList({ commentId, postId, router, user }) {
     if (!confirm("Are you sure you want to delete this reply?")) return;
     
     deleteComment(replyId, {
-      onSuccess: () => {
-        refetch();
-      },
       onError: (error) => {
         console.error("Failed to delete reply:", error);
         alert(error.response?.data?.message || "Failed to delete reply");
@@ -225,10 +217,7 @@ function RepliesList({ commentId, postId, router, user }) {
               <EditCommentForm
                 comment={reply}
                 onCancel={() => setEditingReplyId(null)}
-                onSuccess={() => {
-                  setEditingReplyId(null);
-                  refetch();
-                }}
+                onSuccess={() => setEditingReplyId(null)}
               />
             ) : (
               <>
@@ -462,7 +451,7 @@ export default function CommentsSection({ postId, router, user }) {
         <InlineReply 
           postId={postId} 
           parentId={null}
-          onSubmit={handleRefresh} 
+          // REMOVED: onSubmit={handleRefresh} - React Query will auto-update
         />
       </div>
 

@@ -8,6 +8,8 @@ export const useComments = (postId, { page = 1, limit = 20 } = {}) => {
     queryKey: ['comments', postId, page, limit],
     queryFn: () => commentsApi.getCommentsByPostId(postId, { page, limit }),
     enabled: !!postId,
+    staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 };
 
@@ -16,26 +18,35 @@ export const useReplies = (commentId, { page = 1, limit = 10 } = {}) => {
     queryKey: ['replies', commentId, page, limit],
     queryFn: () => commentsApi.getRepliesByCommentId(commentId, { page, limit }),
     enabled: !!commentId,
+    staleTime: 1000 * 60 * 2, // Consider data fresh for 2 minutes
+    refetchOnWindowFocus: false,
   });
 };
 
-// Mutation hooks
+// Mutation hooks with optimized invalidation
 export const useCreateComment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: commentsApi.createComment,
-    onSuccess: (data, variables) => {
-      // Invalidate comments for the post
-      queryClient.invalidateQueries({ queryKey: ['comments', variables.postId] });
-      
-      // If it's a reply, invalidate replies for parent comment
-      if (variables.parentCommentId) {
-        queryClient.invalidateQueries({ queryKey: ['replies', variables.parentCommentId] });
+    onSuccess: (newComment, variables) => {
+      const { postId, parentCommentId } = variables;
+
+      if (parentCommentId) {
+        // For replies: Only refetch the specific reply thread that needs the new reply
+        queryClient.invalidateQueries({
+          queryKey: ['replies', parentCommentId, 1], // Only first page
+          exact: false,
+        });
+      } else {
+        // For top-level comments: Only refetch first page of comments
+        queryClient.invalidateQueries({
+          queryKey: ['comments', postId, 1],
+          exact: false,
+        });
       }
       
-      // Invalidate post to update comment count
-      queryClient.invalidateQueries({ queryKey: ['posts', variables.postId] });
+      // Don't invalidate posts - comment count can be updated separately if needed
     },
   });
 };
@@ -45,9 +56,66 @@ export const useUpdateComment = () => {
 
   return useMutation({
     mutationFn: commentsApi.updateComment,
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      queryClient.invalidateQueries({ queryKey: ['replies'] });
+    // Optimistic update
+    onMutate: async ({ commentId, content }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['comments'] });
+      await queryClient.cancelQueries({ queryKey: ['replies'] });
+
+      // Snapshot previous values
+      const previousComments = queryClient.getQueriesData({ queryKey: ['comments'] });
+      const previousReplies = queryClient.getQueriesData({ queryKey: ['replies'] });
+
+      // Optimistically update comment in cache
+      queryClient.setQueriesData({ queryKey: ['comments'] }, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map((comment) =>
+            comment.commentId === commentId
+              ? { ...comment, content, isEdited: true }
+              : comment
+          ),
+        };
+      });
+
+      queryClient.setQueriesData({ queryKey: ['replies'] }, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map((reply) =>
+            reply.commentId === commentId
+              ? { ...reply, content, isEdited: true }
+              : reply
+          ),
+        };
+      });
+
+      return { previousComments, previousReplies };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousComments) {
+        context.previousComments.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousReplies) {
+        context.previousReplies.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
+      // Just mark as stale, don't refetch
+      queryClient.invalidateQueries({ 
+        queryKey: ['comments'],
+        refetchType: 'none'
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['replies'],
+        refetchType: 'none'
+      });
     },
   });
 };
@@ -57,10 +125,62 @@ export const useDeleteComment = () => {
 
   return useMutation({
     mutationFn: commentsApi.deleteComment,
+    // Optimistic update
+    onMutate: async (commentId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['comments'] });
+      await queryClient.cancelQueries({ queryKey: ['replies'] });
+
+      // Snapshot previous values
+      const previousComments = queryClient.getQueriesData({ queryKey: ['comments'] });
+      const previousReplies = queryClient.getQueriesData({ queryKey: ['replies'] });
+
+      // Optimistically remove comment from cache
+      queryClient.setQueriesData({ queryKey: ['comments'] }, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.filter((comment) => comment.commentId !== commentId),
+          pagination: old.pagination ? { ...old.pagination, total: old.pagination.total - 1 } : undefined,
+        };
+      });
+
+      queryClient.setQueriesData({ queryKey: ['replies'] }, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.filter((reply) => reply.commentId !== commentId),
+          pagination: old.pagination ? { ...old.pagination, total: old.pagination.total - 1 } : undefined,
+        };
+      });
+
+      return { previousComments, previousReplies };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousComments) {
+        context.previousComments.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousReplies) {
+        context.previousReplies.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      queryClient.invalidateQueries({ queryKey: ['replies'] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      // Don't invalidate anything! Optimistic update is enough.
+      // The cache already has the correct data from onMutate.
+      // Only mark as stale without refetching
+      queryClient.invalidateQueries({ 
+        queryKey: ['comments'],
+        refetchType: 'none' // Just mark stale, don't refetch
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['replies'],
+        refetchType: 'none'
+      });
     },
   });
 };
@@ -75,6 +195,7 @@ export const useUserComments = (
       commentsApi.getCommentsByUserId(userId, { page, limit }),
     enabled: !!userId,
     staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -89,9 +210,71 @@ export const useVoteComment = () => {
         return commentsApi.downvoteComment(commentId);
       }
     },
+    // Optimistic update for voting
+    onMutate: async ({ commentId, voteType }) => {
+      await queryClient.cancelQueries({ queryKey: ['comments'] });
+      await queryClient.cancelQueries({ queryKey: ['replies'] });
+
+      const previousComments = queryClient.getQueriesData({ queryKey: ['comments'] });
+      const previousReplies = queryClient.getQueriesData({ queryKey: ['replies'] });
+
+      // Optimistically update vote count
+      const updateVotes = (comment) => {
+        if (comment.commentId !== commentId) return comment;
+        
+        const upvoteChange = voteType === 'upvote' ? 1 : 0;
+        const downvoteChange = voteType === 'downvote' ? 1 : 0;
+        
+        return {
+          ...comment,
+          upvotes: (comment.upvotes || 0) + upvoteChange,
+          downvotes: (comment.downvotes || 0) + downvoteChange,
+        };
+      };
+
+      queryClient.setQueriesData({ queryKey: ['comments'] }, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map(updateVotes),
+        };
+      });
+
+      queryClient.setQueriesData({ queryKey: ['replies'] }, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map(updateVotes),
+        };
+      });
+
+      return { previousComments, previousReplies };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousComments) {
+        context.previousComments.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousReplies) {
+        context.previousReplies.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['comments'] });
-      queryClient.invalidateQueries({ queryKey: ['replies'] });
+      // Optional: refetch only the specific comment's data if backend returns updated counts
+      // This ensures accuracy but creates a request
+      // You can remove this if optimistic update is sufficient
+      queryClient.invalidateQueries({
+        queryKey: ['comments'],
+        refetchType: 'none', // Don't refetch, just mark as stale
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['replies'],
+        refetchType: 'none',
+      });
     },
   });
 };
