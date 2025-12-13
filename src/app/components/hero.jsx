@@ -167,25 +167,7 @@ export default function RedditFeed() {
                 </div>
 
                 <div className="flex">
-                  {/* Vote section */}
-                  <div className="bg-[#0d1d2c] w-8 sm:w-10 md:w-12 flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 md:py-3 flex-shrink-0">
-                    <button
-                      onClick={() => handleVote(post.postId, "upvote")}
-                      className="text-gray-400 hover:text-[#ff4500] p-0.5 sm:p-1 rounded transition-all duration-300 hover:scale-110 active:scale-95"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                    </button>
-                    <span className="text-white font-bold text-[10px] sm:text-xs md:text-sm leading-tight">
-                      {formatVoteCount(post.upvotes - post.downvotes)}
-                    </span>
-                    <button
-                      onClick={() => handleVote(post.postId, "downvote")}
-                      className="text-gray-400 hover:text-[#7193ff] p-0.5 sm:p-1 rounded transition-all duration-300 hover:scale-110 active:scale-95"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                    </button>
-                  </div>
-
+            
                   {/* Main Content */}
                   <div className="flex-1 p-1.5 sm:p-2 md:p-3 lg:p-4 min-w-0">
                     {/* Post Header */}
@@ -256,38 +238,54 @@ export default function RedditFeed() {
                     )}
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 flex-wrap mt-2 sm:mt-3">
+                  <div className="flex items-center gap-3 sm:gap-4 md:gap-5 mt-2 sm:mt-3 flex-wrap">
+
+                      {/* Like */}
+                      <button
+                        onClick={() => handleVote(post.postId, "upvote")}
+                        className="flex items-center gap-1.5 px-2 py-1 text-gray-400 hover:text-green-400 hover:bg-[#272729] rounded-md transition-all duration-300 active:scale-95"
+                      >
+                        <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-white">
+                          {formatVoteCount(post.upvotes)}
+                        </span>
+                      </button>
+
+                      {/* Dislike */}
+                      <button
+                        onClick={() => handleVote(post.postId, "downvote")}
+                        className="flex items-center gap-1.5 px-2 py-1 text-gray-400 hover:text-red-400 hover:bg-[#272729] rounded-md transition-all duration-300 active:scale-95"
+                      >
+                        <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-xs sm:text-sm font-semibold text-white">
+                          {formatVoteCount(post.downvotes)}
+                        </span>
+                      </button>
+
+                      {/* Comments */}
                       <button
                         onClick={() =>
                           setShowCommentInput(
-                            showCommentInput === post.postId
-                              ? null
-                              : post.postId
+                            showCommentInput === post.postId ? null : post.postId
                           )
                         }
-                        className="flex items-center gap-0.5 sm:gap-1 md:gap-2 px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 text-gray-400 hover:bg-[#272729] rounded sm:rounded-md md:rounded-lg transition-all duration-300 active:scale-95"
+                        className="flex items-center gap-1.5 px-2 py-1 text-gray-400 hover:bg-[#272729] rounded-md transition-all duration-300 active:scale-95"
                       >
-                        <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                        <span className="text-[10px] sm:text-xs md:text-sm font-semibold">
+                        <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-xs sm:text-sm font-semibold">
                           {post.commentCount || 0}
                         </span>
                       </button>
 
-                      <button className="flex items-center gap-0.5 sm:gap-1 md:gap-2 px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 text-gray-400 hover:bg-[#272729] rounded sm:rounded-md md:rounded-lg transition-all duration-300 active:scale-95">
-                        <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                        <span className="text-[10px] sm:text-xs md:text-sm font-semibold hidden md:inline">
+                      {/* Share */}
+                      <button className="flex items-center gap-1.5 px-2 py-1 text-gray-400 hover:bg-[#272729] rounded-md transition-all duration-300 active:scale-95">
+                        <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-xs sm:text-sm font-semibold hidden md:inline">
                           Share
                         </span>
                       </button>
 
-                      <button className="flex items-center gap-0.5 sm:gap-1 md:gap-2 px-1.5 sm:px-2 md:px-3 py-1 sm:py-1.5 md:py-2 text-gray-400 hover:bg-[#272729] rounded sm:rounded-md md:rounded-lg transition-all duration-300 active:scale-95">
-                        <Bookmark className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-                        <span className="text-[10px] sm:text-xs md:text-sm font-semibold hidden md:inline">
-                          Save
-                        </span>
-                      </button>
                     </div>
-
                     {/* Comment Input */}
                     {showCommentInput === post.postId && (
                       <div className="mt-2 sm:mt-3">

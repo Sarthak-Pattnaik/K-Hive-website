@@ -354,17 +354,7 @@ export default function ProfilePage() {
                     >
                       <div className="flex">
                         {/* Vote section */}
-                        <div className="bg-[#0d1d2c] w-12 flex flex-col items-center gap-1 py-3">
-                          <button className="text-gray-400 hover:text-[#ff4500] p-1 rounded transition-all">
-                            <ArrowUp className="w-5 h-5" />
-                          </button>
-                          <span className="text-white font-bold text-sm">
-                            {formatVoteCount(post.upvotes - post.downvotes)}
-                          </span>
-                          <button className="text-gray-400 hover:text-[#7193ff] p-1 rounded transition-all">
-                            <ArrowDown className="w-5 h-5" />
-                          </button>
-                        </div>
+                        
 
                         {/* Content */}
                         <div className="flex-1 p-4">
@@ -384,20 +374,50 @@ export default function ProfilePage() {
                             {post.content}
                           </p>
 
-                          <div className="flex items-center gap-2">
-                            <button className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:bg-[#272729] rounded-lg transition-all">
-                              <MessageSquare className="w-4 h-4" />
-                              <span className="text-sm font-semibold">
-                                {post.commentIds?.length || 0}
-                              </span>
-                            </button>
-                            <button className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:bg-[#272729] rounded-lg transition-all">
-                              <Share2 className="w-4 h-4" />
-                            </button>
-                            <button className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:bg-[#272729] rounded-lg transition-all">
-                              <Bookmark className="w-4 h-4" />
-                            </button>
-                          </div>
+                  <div className="flex items-center gap-3">
+
+  {/* Like */}
+  <button className="flex items-center gap-1.5 px-3 py-1.5 text-gray-400 hover:text-[#00ff51] hover:bg-[#272729] rounded-lg transition-all">
+    <ArrowUp className="w-5 h-5" />
+    <span className="text-sm font-semibold text-white">
+      {formatVoteCount(post.upvotes)}
+    </span>
+  </button>
+
+  {/* Dislike */}
+  <button className="flex items-center gap-1.5 px-3 py-1.5 text-gray-400 hover:text-[#ff7171] hover:bg-[#272729] rounded-lg transition-all">
+    <ArrowDown className="w-5 h-5" />
+    <span className="text-sm font-semibold text-white">
+      {formatVoteCount(post.downvotes)}
+    </span>
+  </button>
+
+  {/* Comments */}
+  <button className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:bg-[#272729] rounded-lg transition-all">
+    <MessageSquare className="w-4 h-4" />
+    <span className="text-sm font-semibold">
+      {post.commentIds?.length || 0}
+    </span>
+  </button>
+
+  {/* Share */}
+  <button className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:bg-[#272729] rounded-lg transition-all">
+    <Share2 className="w-4 h-4" />
+    <span className="text-sm font-semibold hidden sm:inline">
+      Share
+    </span>
+  </button>
+
+  {/* Save */}
+  <button className="flex items-center gap-2 px-3 py-1.5 text-gray-400 hover:bg-[#272729] rounded-lg transition-all">
+    <Bookmark className="w-4 h-4" />
+    <span className="text-sm font-semibold hidden sm:inline">
+      Save
+    </span>
+  </button>
+
+</div>
+
                         </div>
                       </div>
                     </div>
