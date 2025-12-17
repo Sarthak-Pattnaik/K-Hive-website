@@ -43,6 +43,7 @@ export default function RedditNavbar({ onMobileSidebarToggle }) {
     setIsSubmitting(true);
     try {
       let mediaUrls = [];
+      let mediaIds = [];
 
       if (postData.imageFile) {
         const credsResult = await mediaApi.getUploadLink();
@@ -77,6 +78,7 @@ export default function RedditNavbar({ onMobileSidebarToggle }) {
         }
 
         mediaUrls.push(uploadResult.url);
+        mediaIds.push(uploadResult.fileId);
       }
 
       const finalPostData = {
@@ -87,6 +89,10 @@ export default function RedditNavbar({ onMobileSidebarToggle }) {
 
       if (mediaUrls.length > 0) {
         finalPostData.media = mediaUrls;
+      }
+
+      if (mediaIds.length > 0) {
+        finalPostData.mediaId = mediaIds;
       }
 
       await createPostMutation.mutateAsync(finalPostData);

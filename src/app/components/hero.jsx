@@ -51,8 +51,6 @@ export default function RedditFeed() {
     limit: 10,
   });
 
-  console.log(postsData);
-
   const { mutate: votePost } = useVotePost();
   const { mutate: createComment, isPending } = useCreateComment();
 
